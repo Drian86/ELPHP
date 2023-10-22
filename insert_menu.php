@@ -1,36 +1,45 @@
 <?php
-   // Database connection code
-   $servername = "adrianhost";
-   $username = "adrian";
-   $password = "adrian"; // Replace with the actual password you set for the "adrian" user
-   $dbname = "addmenudb";
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Establish a database connection (replace with your own database details)
+    $db_host = 'localhost';
+    $db_user = 'root';
+    $db_password = '';
+    $db_name = 'addMenuDB';
 
-   $conn = new mysqli($servername, $username, $password, $dbname);
-   if ($conn->connect_error) {
-     die("Connection failed: " . $conn->connect_error);
-   }
+    $conn = new mysqli($db_host, $db_user, $db_password, $db_name);
 
-   // Execute a separate query to grant privileges to adrian user
-   $conn->query("GRANT ALL PRIVILEGES ON *.* TO `adrian`@`localhost` IDENTIFIED BY PASSWORD '*F036BB934FE78FFF7E2BC7F478426C530183336C' WITH GRANT OPTION");
-   $conn->query("GRANT ALL PRIVILEGES ON `adrian`.* TO `adrian`@`localhost`");
-   $conn->query("GRANT ALL PRIVILEGES ON `adrian\_%`.* TO `adrian`@`localhost`");
+    if ($conn->connect_error) {
+        die("Connection failed: " . $conn->connect_error);
+    }
 
-   // Form data validation
-   $menuName = $_POST["menuName"];
-   $menuDescription = $_POST["menuDescription"];
+    // Handle form submission for adding a new menu item or updating an existing menu item
+    if (isset($_POST['Menu_Name'], $_POST['Menu_Desc'])) {
+        $menuName = $_POST['Menu_Name'];
+        $menuDescription = $_POST['Menu_Desc'];
 
-   if (empty($menuName) || empty($menuDescription)) {
-     // Display an error message
-   } else {
-     // SQL query to insert data into database
-     $sql = "INSERT INTO menu (menuName, menuDescription) VALUES ('$menuName', '$menuDescription')";
+        if (empty($_POST['Menu_ID'])) {
+            // If Menu_ID is empty, it's a new menu item
+            $sql = "INSERT INTO addMenudb (Menu_Name, Menu_Desc) VALUES (?, ?)";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ss", $menuName, $menuDescription);
+        } else {
+            // If Menu_ID is set, it's an update
+            $menuID = $_POST['Menu_ID'];
+            $sql = "UPDATE addMenudb SET Menu_Name = ?, Menu_Desc = ? WHERE id = ?";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("ssi", $menuName, $menuDescription, $menuID);
+        }
 
-     if ($conn->query($sql) === TRUE) {
-       // Display a success message
-     } else {
-       // Display an error message
-     }
-   }
+        if ($stmt->execute()) {
+            echo "success"; // Send a success response
+        } else {
+            echo "error"; // Send an error response
+        }
 
-   $conn->close();
+        $stmt->close();
+    }
+
+    // Close the database connection
+    $conn->close();
+}
 ?>
